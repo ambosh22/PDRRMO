@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+// AppProvider.js
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import drimoLogo from "../context/drimo/drimo.png";  // Import the image from the src folder
+import { sendMessageToChatbot } from '../components/services/sendMessagetoChatbot'; // Import the service function
 
 const AppContext = createContext();
 
-const API_KEY = "ac97b4a45bf9f7f94d8d960d16fc3a36";
+const API_KEY = "ac97b4a45bf9f7f94d8d960d16fc3a36";  // Your OpenWeather API key
 const DEFAULT_LATITUDE = 30.0626;
 const DEFAULT_LONGITUDE = 31.2497;
 
@@ -25,48 +27,10 @@ const AppProvider = ({ children }) => {
   const [query, setQuery] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
 
-  const buttonRef = useRef(null);  // Ref for the draggable button
-  const isDragging = useRef(false);  // Track dragging state
-  const initialPosition = useRef({ x: 0, y: 0 });  // Store initial mouse position
-  const buttonPosition = useRef({ x: 20, y: 20 });  // Initial button position
-
-  // Function to handle the start of dragging
-  const onMouseDown = (e) => {
-    isDragging.current = true;
-    initialPosition.current = {
-      x: e.clientX - buttonPosition.current.x,
-      y: e.clientY - buttonPosition.current.y
-    };
-  };
-
-  // Function to handle dragging
-  const onMouseMove = (e) => {
-    if (isDragging.current) {
-      buttonPosition.current = {
-        x: e.clientX - initialPosition.current.x,
-        y: e.clientY - initialPosition.current.y
-      };
-      buttonRef.current.style.left = `${buttonPosition.current.x}px`;
-      buttonRef.current.style.top = `${buttonPosition.current.y}px`;
-    }
-  };
-
-  // Function to stop dragging
-  const onMouseUp = () => {
-    isDragging.current = false;
-  };
-
-  useEffect(() => {
-    // Add event listeners for dragging
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-    
-    return () => {
-      // Clean up event listeners when the component unmounts
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
+  // State for handling messages
+  const [messages, setMessages] = useState([]);
+  const [userInput, setUserInput] = useState("");
+  const [isChatbotVisible, setIsChatbotVisible] = useState(false);
 
   const fetchWeatherData = useCallback(() => {
     const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
@@ -91,8 +55,24 @@ const AppProvider = ({ children }) => {
     fetchGeoData();
   }, [fetchGeoData]);
 
-  const handleButtonClick = () => {
-    console.log("Logo clicked!");
+  const handleLogoClick = () => {
+    setIsChatbotVisible(prevState => !prevState);
+  };
+
+  // Function to handle sending messages
+  const handleSendMessage = async () => {
+    if (userInput.trim()) {
+      const newMessages = [...messages, { sender: "user", text: userInput }];
+      setMessages(newMessages);
+      setUserInput("");
+
+      // Add a placeholder message for the chatbot (thinking message)
+      setMessages([...newMessages, { sender: "bot", text: "Thinking..." }]);
+
+      // Get chatbot response from the backend
+      const chatbotResponse = await sendMessageToChatbot(userInput);
+      setMessages([...newMessages, { sender: "bot", text: chatbotResponse }]);
+    }
   };
 
   const value = {
@@ -110,14 +90,40 @@ const AppProvider = ({ children }) => {
     <AppContext.Provider value={value}>
       <div style={styles.appContainer}>
         <img
-          ref={buttonRef}
           src={drimoLogo}  // Use the imported image
           alt="Logo"
-          onMouseDown={onMouseDown}
-          onClick={handleButtonClick}
+          onClick={handleLogoClick}
           style={styles.logo}
         />
         {children}
+
+        {/* Conditionally render the chatbot */}
+        {isChatbotVisible && (
+          <div style={styles.chatbotContainer}>
+            <div style={styles.chatbotHeader}>
+              <h4>Chatbot</h4>
+              <button onClick={() => setIsChatbotVisible(false)} style={styles.closeButton}>X</button>
+            </div>
+            <div style={styles.chatbotMessages}>
+              {messages.map((msg, index) => (
+                <div
+                  key={index}
+                  style={msg.sender === "bot" ? styles.botMessage : styles.userMessage}
+                >
+                  <p>{msg.text}</p>
+                </div>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder="Type your message..."
+              style={styles.chatInput}
+            />
+            <button onClick={handleSendMessage} style={styles.sendButton}>Send</button>
+          </div>
+        )}
       </div>
     </AppContext.Provider>
   );
@@ -129,15 +135,78 @@ const styles = {
     minHeight: '100vh',
   },
   logo: {
-    position: 'fixed',  // Use fixed position to keep it at the top-right even after refresh
-    top: '130px',  // Move the logo lower by adjusting this value
-    right: '20px',  // Keep the logo aligned to the right
-    maxWidth: '10%',   // Ensure the logo fits within the screen width
-    maxHeight: '10%',  // Ensure the logo fits within the screen height
-    width: 'auto',      // Maintains aspect ratio
-    height: 'auto',     // Maintains aspect ratio
+    position: 'fixed',  // Fixed position to keep it at the bottom-right of the screen
+    bottom: '20px',     // Distance from the bottom of the screen
+    right: '20px',      // Distance from the right side of the screen
+    maxWidth: '10%',     // Ensure the logo fits within the screen width
+    maxHeight: '10%',    // Ensure the logo fits within the screen height
+    width: 'auto',       // Maintains aspect ratio
+    height: 'auto',      // Maintains aspect ratio
     cursor: 'pointer',
     objectFit: 'contain', // Ensures that the image is contained within its box without distortion
+  },
+  chatbotContainer: {
+    position: 'fixed',
+    bottom: '100px', // Space from the bottom of the screen
+    right: '20px', // Space from the right
+    width: '300px',
+    height: '400px',
+    backgroundColor: 'white',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+    padding: '10px',
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  chatbotHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottom: '1px solid #ccc',
+    paddingBottom: '5px',
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  chatbotMessages: {
+    flexGrow: 1,
+    overflowY: 'auto',
+    marginBottom: '10px',
+  },
+  botMessage: {
+    backgroundColor: '#e0e0e0',
+    padding: '10px',
+    borderRadius: '5px',
+    margin: '5px 0',
+  },
+  userMessage: {
+    backgroundColor: '#0084ff',
+    color: 'white',
+    padding: '10px',
+    borderRadius: '5px',
+    margin: '5px 0',
+    alignSelf: 'flex-end',
+  },
+  chatInput: {
+    width: '100%',
+    padding: '10px',
+    border: '1px solid #ccc',
+    borderRadius: '20px',
+    fontSize: '14px',
+  },
+  sendButton: {
+    backgroundColor: '#0084ff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '20px',
+    padding: '10px 20px',
+    cursor: 'pointer',
+    marginTop: '10px',
   },
 };
 

@@ -3,15 +3,13 @@ import styles from "./Header.module.css";
 import logoImg from "../../assets/logo.png";
 import { FaSearch } from "react-icons/fa";
 import {
-  FaMoon,
-  FaSun,
   FaArrowLeft,
   FaLocationCrosshairs,
 } from "react-icons/fa6";
 import { useAppContext } from "../../context/AppContext";
 import { FaLocationDot } from "react-icons/fa6";
 import UseCurrentLocation from "../../Hooks/UseCurrentLocation";
-import UseToogleTheme from "../../Hooks/UseToogleTheme";
+//import UseToogleTheme from "../../Hooks/UseToogleTheme";
 
 const debounce = (func, delay) => {
   let timer;
@@ -24,7 +22,7 @@ const debounce = (func, delay) => {
 function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { getCurrentLocationWeather, isDisabled } = UseCurrentLocation();
-  const { isDarkMode, toggleMode } = UseToogleTheme();
+  //const {  toggleMode } = UseToogleTheme();
   const {
     setQuery,
     searchResults,
@@ -148,14 +146,7 @@ function Header() {
             <span className={styles.locationBtn}>Current Location</span>
           </button>
         </div>
-        <button
-          className={styles.toggle}
-          aria-label="switch between light and dark mode"
-          title="switch the theme"
-          onClick={toggleMode}
-        >
-          {isDarkMode ? <FaSun /> : <FaMoon />}
-        </button>
+       
       </div>
     </header>
   );
