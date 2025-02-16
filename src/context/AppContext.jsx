@@ -1,7 +1,6 @@
-// AppProvider.js
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import drimoLogo from "../context/drimo/drimo.png";  // Import the image from the src folder
-import { sendMessageToChatbot } from '../components/services/sendMessagetoChatbot'; // Import the service function
+import { sendMessageToOpenAI } from "./openaiService";  // Import the OpenAI service
 
 const AppContext = createContext();
 
@@ -55,8 +54,12 @@ const AppProvider = ({ children }) => {
     fetchGeoData();
   }, [fetchGeoData]);
 
-  const handleLogoClick = () => {
+  const handleLogoClick = async () => {
     setIsChatbotVisible(prevState => !prevState);
+    if (!isChatbotVisible) {
+      const chatbotResponse = await sendMessageToOpenAI("Hello, how can I assist you?");
+      setMessages([...messages, { sender: "bot", text: chatbotResponse }]);
+    }
   };
 
   // Function to handle sending messages
@@ -70,7 +73,7 @@ const AppProvider = ({ children }) => {
       setMessages([...newMessages, { sender: "bot", text: "Thinking..." }]);
 
       // Get chatbot response from the backend
-      const chatbotResponse = await sendMessageToChatbot(userInput);
+      const chatbotResponse = await sendMessageToOpenAI(userInput);
       setMessages([...newMessages, { sender: "bot", text: chatbotResponse }]);
     }
   };
