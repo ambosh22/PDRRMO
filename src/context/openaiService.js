@@ -2,7 +2,7 @@ export async function sendMessageToOpenAI(message) {
     const response = await fetch('https://cheapest-gpt-4-turbo-gpt-4-vision-chatgpt-openai-ai-api.p.rapidapi.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-            'x-rapidapi-key': '16b150dfc1msh78e9ff33a91acbap12c8eejsn3430e1546326',  // Replace with your actual RapidAPI key
+            'x-rapidapi-key': '16b150dfc1msh78e9ff33a91acbap12c8eejsn3430e15463261',  // Replace with your actual RapidAPI key
             'x-rapidapi-host': 'cheapest-gpt-4-turbo-gpt-4-vision-chatgpt-openai-ai-api.p.rapidapi.com',
             'Content-Type': 'application/json'
         },
