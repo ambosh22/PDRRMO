@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback } from "react";
 import styles from "./Header.module.css";
-import logoImg from "../../assets/logo.png";
+import logoImg from "../../assets/PDRRMO.png";
 import { FaSearch } from "react-icons/fa";
 import {
   FaArrowLeft,

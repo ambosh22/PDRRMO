@@ -5,8 +5,6 @@ import { sendMessageToOpenAI } from '../context/openaiService'; // Import the se
 const AppContext = createContext();
 
 const API_KEY = "ac97b4a45bf9f7f94d8d960d16fc3a36";  // Your OpenWeather API key
-const DEFAULT_LATITUDE = 30.0626;
-const DEFAULT_LONGITUDE = 31.2497;
 
 async function fetchData(url, setter) {
     try {
@@ -19,8 +17,8 @@ async function fetchData(url, setter) {
 }
 
 const AppProvider = ({ children }) => {
-    const [latitude, setLatitude] = useState(DEFAULT_LATITUDE);
-    const [longitude, setLongitude] = useState(DEFAULT_LONGITUDE);
+    const [latitude, setLatitude] = useState(null);
+    const [longitude, setLongitude] = useState(null);
     const [currentWeatherData, setCurrentWeatherData] = useState(null);
     const [forecastData, setForecastData] = useState(null);
     const [query, setQuery] = useState(null);
@@ -32,11 +30,13 @@ const AppProvider = ({ children }) => {
     const [isChatbotVisible, setIsChatbotVisible] = useState(false);
 
     const fetchWeatherData = useCallback(() => {
-        const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
+        if (latitude && longitude) {
+            const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
+            const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
 
-        fetchData(currentWeatherUrl, setCurrentWeatherData);
-        fetchData(forecastUrl, setForecastData);
+            fetchData(currentWeatherUrl, setCurrentWeatherData);
+            fetchData(forecastUrl, setForecastData);
+        }
     }, [latitude, longitude]);
 
     const fetchGeoData = useCallback(() => {
@@ -45,6 +45,19 @@ const AppProvider = ({ children }) => {
             fetchData(geoUrl, setSearchResults);
         }
     }, [query]);
+
+    useEffect(() => {
+        // Get user's current location
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setLatitude(position.coords.latitude);
+                setLongitude(position.coords.longitude);
+            },
+            (error) => {
+                console.error("Error getting location:", error);
+            }
+        );
+    }, []);
 
     useEffect(() => {
         fetchWeatherData();
@@ -61,7 +74,6 @@ const AppProvider = ({ children }) => {
         }
     };
 
-    // Function to handle sending messages
     const handleSendMessage = async () => {
         if (userInput.trim()) {
             const newMessages = [...messages, { sender: "user", text: userInput }];
@@ -83,8 +95,6 @@ const AppProvider = ({ children }) => {
     };
 
     const value = {
-        setLatitude,
-        setLongitude,
         currentWeatherData,
         forecastData,
         setQuery,
